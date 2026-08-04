@@ -60,3 +60,30 @@ def test_delete_todo():
     assert data["message"] == "deleted"
     get_response = client.get("/todos")
     assert get_response.json() == []
+
+
+def test_get_nonexistent_todo_returns_404():
+    """При запросе несуществующей задачи возвращается 404."""
+    todos.clear()
+    response = client.get("/todos/999")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Задача не найдена"
+
+
+def test_create_todo_with_empty_title_returns_400():
+    """Создание задачи с пустым названием возвращает 400."""
+    todos.clear()
+    response = client.post("/todos", json={"title": "   "})
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Название задачи не может быть пустым"
+    response = client.post("/todos", json={"title": ""})
+    assert response.status_code == 400
+
+
+def test_create_todo_trims_whitespace():
+    """Пробелы в начале и конце названия обрезаются."""
+    todos.clear()
+    response = client.post("/todos", json={"title": "  Погулять с собакой  "})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["title"] == "Погулять с собакой"
